@@ -1,0 +1,73 @@
+<head><title>ESP8266 PLUG</title>
+<script type="text/javascript" src="140medley.min.js"></script>
+<script type="text/javascript">
+
+
+window.onload=function(e) {
+
+    var xhr=j();
+    var sendInProgress=false;
+    var plug_status = true;
+
+    function plug_img_set(status) {
+        var plug_img = document.getElementById('plug_img');
+        img_src = "plug_off.png";
+        if(status) {
+            img_src = "plug_on.png";
+        }
+        plug_img.src = img_src;
+    }
+    
+    function status_get(){
+        xhr.open("GET", "config?command=switch");
+        xhr.onreadystatechange=function() {
+        if (xhr.readyState==4 && xhr.status>=200 && xhr.status<300) {
+            var data=JSON.parse(xhr.responseText);
+            if (data.response.status=="0") {
+                plug_status = false;
+			} else {
+                plug_status = true;
+			}
+			plug_img_set(plug_status);
+        }
+        }
+        xhr.send();
+    }
+
+    function plug(status) {
+        var status_num = 0;
+        if(status) { status_num = 1; }
+        var pwmJson = {"response": {"status": status_num}};
+        if (sendInProgress) return;
+        sendInProgress=true;
+        xhr.open("POST", "config?command=switch");
+        xhr.onreadystatechange=function() {
+            if (xhr.readyState==4) {
+                sendInProgress=false;
+            }
+            if (xhr.readyState==4 && xhr.status>=200 && xhr.status<300) {
+                plug_img_set(status);
+                plug_status = status;
+            }
+        }
+        xhr.send(JSON.stringify(pwmJson));
+    }
+
+    var plug_a = document.getElementById('plug_a');
+    plug_a.onclick = function(e) {
+        plug(!plug_status);
+    }
+    status_get();
+}
+
+</script>
+</head><body>
+<ul>
+<li><a href="wifi">WiFi setup</a></li>
+</ul>
+<!--p>Pick a color:</p-->
+<div id="parent">
+    <a id="plug_a" href="javascript:"><img id="plug_img" src="plug_on.png"/></a>
+</div>
+
+</body>
