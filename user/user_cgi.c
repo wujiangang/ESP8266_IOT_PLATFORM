@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2013-2014 Espressif Systems (Wuxi)
+ * Copyright 2015-2017 Espressif Systems
  *
  * FileName: user_cgi.c
  *

@@ -1,7 +1,7 @@
 #ifndef __USER_DEVICE_H__
 #define __USER_DEVICE_H__
 
-#ifdef SERVER_SSL_ENABLE
+#ifdef CLIENT_SSL_ENABLE
 #include "ssl/ssl_ssl.h"
 #endif
 
@@ -47,7 +47,7 @@ enum{
 
 struct client_conn_param {
     int32 sock_fd;
-#ifdef SERVER_SSL_ENABLE
+#ifdef CLIENT_SSL_ENABLE
     SSL *ssl;
     SSL_CTX *ssl_ctx;
 #endif

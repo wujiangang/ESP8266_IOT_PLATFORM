@@ -565,8 +565,8 @@ user_esp_platform_discon(struct client_conn_param* pclient_param)
 #endif
 
 #ifdef CLIENT_SSL_ENABLE
-    ssl_ctx_free(pclient_param->ssl_ctx);
     ssl_free(pclient_param->ssl);
+    ssl_ctx_free(pclient_param->ssl_ctx);
     close(pclient_param->sock_fd);
 #else
     close(pclient_param->sock_fd);
@@ -1228,7 +1228,7 @@ user_esp_platform_check_conection(void)
         wifi_get_ip_info(STATION_IF, &ipconfig);
     }
 
-    memcpy(esp_server_ip, esp_domain_ip, 4);
+    memcpy(&esp_server_ip, esp_domain_ip, 4);
     ESP_DBG("ESP_DOMAIN IP address: %s\n", inet_ntoa(esp_server_ip));
     
 #endif
@@ -1330,7 +1330,7 @@ user_platform_stationap_enable(void)
  * Parameters   : none
  * Returns      : none
 *******************************************************************************/
-#ifdef SERVER_SSL_ENABLE
+#ifdef CLIENT_SSL_ENABLE
     /**
      * Display what session id we have.
      */
@@ -1438,8 +1438,8 @@ user_esp_platform_maintainer(void *pvParameters)
             struct station_config *sta_config = (struct station_config *)zalloc(sizeof(struct station_config));
             wifi_station_get_ap_info(sta_config);
             memset(sta_config, 0, sizeof(struct station_config));
-            sprintf(sta_config->ssid, "wifi-1");
-            sprintf(sta_config->password, "sumof2+24");
+            sprintf(sta_config->ssid, "IOT_DEMO_TEST");
+            sprintf(sta_config->password, "0000");
             wifi_station_set_config(sta_config);
             free(sta_config);
         }
@@ -1480,7 +1480,7 @@ user_esp_platform_maintainer(void *pvParameters)
 
     /*if token not ready, wait here*/
     while(TRUE != esp_param.tokenrdy) {
-//        ESP_DBG("token invalid...\n");
+        //ESP_DBG("token invalid...\n");
         vTaskDelay(1000 / portTICK_RATE_MS);
     }
 
@@ -1523,41 +1523,59 @@ user_esp_platform_maintainer(void *pvParameters)
         do{
             ret = connect(client_param.sock_fd,(struct sockaddr*)&remote_addr,sizeof(struct sockaddr));
             if(0 != ret){
-
                 ESP_DBG("connect fail!\n");
                 device_status = DEVICE_CONNECT_SERVER_FAIL;
                 vTaskDelay(1000 / portTICK_RATE_MS);
-                
-            }
+           }
             else{
                 ESP_DBG("connect sucess!\n");
-                
 #ifdef CLIENT_SSL_ENABLE
+                int i=0;
+                int cert_index = 0, ca_cert_index = 0;
+                int cert_size, ca_cert_size;
+                char **ca_cert, **cert;
+
+                cert_size = ssl_get_config(SSL_MAX_CERT_CFG_OFFSET);
+                ca_cert_size = ssl_get_config(SSL_MAX_CA_CERT_CFG_OFFSET);
+                ca_cert = (char **)calloc(1, sizeof(char *)*ca_cert_size);
+                cert = (char **)calloc(1, sizeof(char *)*cert_size);
+
                 if ((client_param.ssl_ctx= ssl_ctx_new(options, SSL_DEFAULT_CLNT_SESS)) == NULL) {
                     printf("Error: Client context is invalid\n");
                     close(client_param.sock_fd);
-                    goto Local_mode; //failed to creat ssl_ctx, changge to local mode
+                    continue;
+                }
+
+                for (i = 0; i < cert_index; i++) {
+                    if (ssl_obj_load(client_param.ssl_ctx, SSL_OBJ_X509_CERT, cert[i], NULL)){
+                        printf("Certificate '%s' is undefined.\n", cert[i]);
+                    }
                 }
                 
+                for (i = 0; i < ca_cert_index; i++) {
+                    if (ssl_obj_load(client_param.ssl_ctx, SSL_OBJ_X509_CACERT, ca_cert[i], NULL)){
+                        printf("Certificate '%s' is undefined.\n", ca_cert[i]);
+                    }
+                }
+
+                free(cert);
+                free(ca_cert);
+
                 /* Try session resumption? */
-                printf("client handshake start!\n");
+                printf("client handshake start! ssl_ctx 0x%x sockfd %d\n",client_param.ssl_ctx,client_param.sock_fd);
                 client_param.ssl= ssl_client_new(client_param.ssl_ctx, client_param.sock_fd, NULL, 0);
                 if (client_param.ssl == NULL){
                     ssl_ctx_free(client_param.ssl_ctx);
                     close(client_param.sock_fd);
-                    goto Local_mode; //handshake failed at once, changge to local mode
+                    continue;
                 }
-
-                int i =10;//wait handshake 10 SEC
-                while(ssl_handshake_status(client_param.ssl) != SSL_OK && --i){
-                    vTaskDelay(1000/portTICK_RATE_MS);
-                }
-                 
+                
                 if(ssl_handshake_status(client_param.ssl) != SSL_OK){
-                    ssl_ctx_free(client_param.ssl_ctx);
+                    printf("client handshake fail.\n");
                     ssl_free(client_param.ssl);
+                    ssl_ctx_free(client_param.ssl_ctx);
                     close(client_param.sock_fd);
-                    goto Local_mode; //handshake failed, changge to local mode
+                    continue;
                 }
                 
                 //handshake sucesses,show cert here for debug only
@@ -1566,13 +1584,10 @@ user_esp_platform_maintainer(void *pvParameters)
                     if (common_name) {
                         printf("Common Name:\t\t\t%s\n", common_name);
                     }
-                
                     display_session_id(client_param.ssl);
                     display_cipher(client_param.ssl);
-                    printf("client handshake ok!\n");
                     quiet = true;
                 }
-                
 #endif      
                 user_esp_platform_connected(&client_param);
                 break;
@@ -1587,7 +1602,9 @@ user_esp_platform_maintainer(void *pvParameters)
         }
         
         user_esp_platform_sent(&client_param);
-
+        
+        fd_set read_set,write_set;  
+        struct timeval timeout;
         while(1){
             
             xStatus = xQueueReceive(QueueStop,&ValueFromReceive,0);
@@ -1595,69 +1612,86 @@ user_esp_platform_maintainer(void *pvParameters)
                 ESP_DBG("esp_platform_maintainer rcv exit signal!\n");
                 break;
             }
-        
-            memset(pusrdata, 0, sizeof(pusrdata));
-            setsockopt(client_param.sock_fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&nNetTimeout, sizeof(int));
-#ifdef CLIENT_SSL_ENABLE
-            uint8_t *read_buf = NULL;
-            ret = ssl_read(client_param.ssl, &read_buf);
-            if (ret > 0) {
-                user_esp_platform_data_process(&client_param,read_buf,ret);
-                timeout_count = 0;
-            }        
-#else
-            ret = recv(client_param.sock_fd, (u8 *)pusrdata, sizeof(pusrdata), 0);
-            if (ret > 0){
-                user_esp_platform_data_process(&client_param,pusrdata,ret);
-                timeout_count = 0;
-            }
-#endif
-            else if ((ret == 0)||(ret == -1 && errno != EAGAIN)){
-                //ret == 0 connection is closed by server
-                //ret == -1 && ERRNO != AGAIN, not timeout, smth wrong
-                //disconnect,exit the recv loop,to connect again
-                ESP_DBG("recv error,disconnect with server!\n");
-                user_esp_platform_discon(&client_param);
-                timeout_count = 0;
-                break;
-                
-            } else {
-            //start the tmeout counter,once it reach the beacon time,send the beacon and wait response,
-#if (PLUG_DEVICE || LIGHT_DEVICE)
 
-                wifi_get_ip_info(STATION_IF, &sta_ipconfig);
-                if((sta_ipconfig.ip.addr == 0 || wifi_station_get_connect_status() != STATION_GOT_IP)){
-                    user_esp_platform_discon(&client_param);
-                    timeout_count = 0;
-                    break;
+            /*clear fdset, and set the selct function wait time*/
+            FD_ZERO(&read_set);
+            timeout.tv_sec = 1;
+            timeout.tv_usec = 0;
+            /* allow parallel reading of server and standard input */
+            FD_SET(client_param.sock_fd, &read_set);
+            
+            ret = select(client_param.sock_fd+1, &read_set, NULL, NULL, &timeout);
+            if ((ret) > 0){
+                /* read standard input? */
+                if (FD_ISSET(client_param.sock_fd, &read_set)){
+                    printf("read application data\n");
+                    //setsockopt(client_param.sock_fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&nNetTimeout, sizeof(int));
+#ifdef CLIENT_SSL_ENABLE
+                    uint8_t *read_buf = NULL;
+                    ret = ssl_read(client_param.ssl, &read_buf);
+                    if (ret > 0) {
+                        user_esp_platform_data_process(&client_param,read_buf,ret);
+                        timeout_count = 0;
                     }
-                
-                if(timeout_count++ > BEACON_TIME/nNetTimeout){
-                    if (ping_status == FALSE) {        //disconnect,exit the recv loop,to connect again
-                        ESP_DBG("user_esp_platform_sent_beacon,server noresponse, and beacon time comes again!\n");
+                    else if (ret < 0){
+                        //disconnect,exit the recv loop,to connect again
+                        ESP_DBG("recv error %d,disconnect with server!\n", ret);
                         user_esp_platform_discon(&client_param);
+                        timeout_count = 0;
                         break;
                     }
-                    
-                    user_esp_platform_sent_beacon(&client_param);
-                    ping_status == FALSE;
-                    timeout_count = 0;
-                }
+#else
+                    memset(pusrdata, 0, sizeof(pusrdata));
+                    ret = recv(client_param.sock_fd, (u8 *)pusrdata, sizeof(pusrdata), 0);
+                    if (ret > 0){
+                        user_esp_platform_data_process(&client_param,pusrdata,ret);
+                        timeout_count = 0;
+                    }
+                    else if ((ret == 0)||(ret == -1 && errno != EAGAIN)){
+                        //ret == 0 connection is closed by server
+                        //ret == -1 && ERRNO != AGAIN, not timeout, smth wrong
+                        //disconnect,exit the recv loop,to connect again
+                        ESP_DBG("recv error %d,disconnect with server!\n", ret);
+                        user_esp_platform_discon(&client_param);
+                        timeout_count = 0;
+                        break;
+                    }
 #endif
-            } 
+                    else {
+                    //start the tmeout counter,once it reach the beacon time,send the beacon and wait response,
+#if (PLUG_DEVICE || LIGHT_DEVICE)
 
+                     wifi_get_ip_info(STATION_IF, &sta_ipconfig);
+                     if((sta_ipconfig.ip.addr == 0 || wifi_station_get_connect_status() != STATION_GOT_IP)){
+                        user_esp_platform_discon(&client_param);
+                        timeout_count = 0;
+                        break;
+                     }
+                     
+                     if(timeout_count++ > BEACON_TIME/nNetTimeout){
+                         if (ping_status == FALSE) {        //disconnect,exit the recv loop,to connect again
+                             ESP_DBG("user_esp_platform_sent_beacon,server noresponse, and beacon time comes again!\n");
+                             user_esp_platform_discon(&client_param);
+                             break;
+                         }
+                         user_esp_platform_sent_beacon(&client_param);
+                         ping_status == FALSE;
+                         timeout_count = 0;
+                     }
+#endif
+                    } 
+                }
+            }
+            //jeremy, what about the stack, the fit value?
             ESP_DBG("platform_maintainer stack:%d heap:%d\n",uxTaskGetStackHighWaterMark(NULL),system_get_free_heap_size());
+            }
         }
-        
-    }
-
 Local_mode:
     wifi_set_opmode(STATIONAP_MODE);
 
-
 #ifdef CLIENT_SSL_ENABLE
-    ssl_ctx_free(client_param.ssl_ctx);
     ssl_free(client_param.ssl);
+    ssl_ctx_free(client_param.ssl_ctx);
 #endif
 
     if(client_param.sock_fd >= 0)close(client_param.sock_fd);
@@ -1673,8 +1707,14 @@ void   user_esp_platform_init(void)
     if (QueueStop == NULL)
         QueueStop = xQueueCreate(1,1);
 
-    if (QueueStop != NULL)
-        xTaskCreate(user_esp_platform_maintainer, "platform_maintainer", 384, NULL, 5, NULL);//512, 274 left 
+    if (QueueStop != NULL){
+#ifdef CLIENT_SSL_ENABLE
+        xTaskCreate(user_esp_platform_maintainer, "platform_maintainer", 640, NULL, 5, NULL);//ssl need much more stack
+#else
+        xTaskCreate(user_esp_platform_maintainer, "platform_maintainer", 384, NULL, 5, NULL);//512, 274 left,384
+#endif
+    }
+        
 }
 
 sint8   user_esp_platform_deinit(void)

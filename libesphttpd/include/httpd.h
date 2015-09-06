@@ -24,7 +24,7 @@ struct single_conn_param {
     int32 sockfd;
     int32  timeout;
     os_timer_t stop_watch;
-#ifdef SERVER_SSL_ENABLE
+#ifdef CLIENT_SSL_ENABLE
     SSL *ssl;
 #endif
 };
