@@ -257,6 +257,7 @@ int   cgiWiFiSetMode(HttpdConnData *connData) {
 	if (len!=0) {
 		printf("cgiWifiSetMode: %s\n", pbuf);
 		wifi_set_opmode(atoi(pbuf));
+        cgiWifiAps.scanInProgress=0;
 	}
 	httpdRedirect(connData, "/wifi");
 	return HTTPD_CGI_DONE;
