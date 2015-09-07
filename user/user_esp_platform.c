@@ -1657,31 +1657,30 @@ user_esp_platform_maintainer(void *pvParameters)
                         break;
                     }
 #endif
-                    else {
-                    //start the tmeout counter,once it reach the beacon time,send the beacon and wait response,
-#if (PLUG_DEVICE || LIGHT_DEVICE)
-
-                     wifi_get_ip_info(STATION_IF, &sta_ipconfig);
-                     if((sta_ipconfig.ip.addr == 0 || wifi_station_get_connect_status() != STATION_GOT_IP)){
-                        user_esp_platform_discon(&client_param);
-                        timeout_count = 0;
-                        break;
-                     }
-                     
-                     if(timeout_count++ > BEACON_TIME/nNetTimeout){
-                         if (ping_status == FALSE) {        //disconnect,exit the recv loop,to connect again
-                             ESP_DBG("user_esp_platform_sent_beacon,server noresponse, and beacon time comes again!\n");
-                             user_esp_platform_discon(&client_param);
-                             break;
-                         }
-                         user_esp_platform_sent_beacon(&client_param);
-                         ping_status == FALSE;
-                         timeout_count = 0;
-                     }
-#endif
-                    } 
                 }
             }
+#if (PLUG_DEVICE || LIGHT_DEVICE)
+            else{
+                //start the tmeout counter,once it reach the beacon time,send the beacon and wait response,
+                wifi_get_ip_info(STATION_IF, &sta_ipconfig);
+                if((sta_ipconfig.ip.addr == 0 || wifi_station_get_connect_status() != STATION_GOT_IP)){
+                    user_esp_platform_discon(&client_param);
+                    timeout_count = 0;
+                    break;
+                }
+
+                if(timeout_count++ > BEACON_TIME/nNetTimeout){
+                    if (ping_status == FALSE) {        //disconnect,exit the recv loop,to connect again
+                        ESP_DBG("user_esp_platform_sent_beacon,server noresponse, and beacon time comes again!\n");
+                        user_esp_platform_discon(&client_param);
+                        break;
+                    }
+                    user_esp_platform_sent_beacon(&client_param);
+                    ping_status == FALSE;
+                    timeout_count = 0;
+                }
+            }
+#endif
             //jeremy, what about the stack, the fit value?
             ESP_DBG("platform_maintainer stack:%d heap:%d\n",uxTaskGetStackHighWaterMark(NULL),system_get_free_heap_size());
             }
