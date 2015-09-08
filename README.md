@@ -2,7 +2,7 @@
 
 ----------
 
-ESP8266 SDK provides users with a simple, fast and efficient development platform for Internet of Things products. The ESP8266 IOT Platform is based on the FreeRTOS ESP8266 SDK and adds on to it some commonly used functionalities, in an example application of a smart plug. This application uses the ESP-TOUCH protocol to realise smart configuration of the device. The communication protocols used are JSON and HTTP REST. An Android mobile APK is also included as a basic template for the users.
+ESP8266 SDK provides users with a simple, fast and efficient development platform for Internet of Things products. The ESP8266 IOT Platform is based on the FreeRTOS ESP8266 SDK (https://github.com/espressif/esp_iot_rtos_sdk) and adds on to it some commonly used functionalities, in an example application of a smart plug. This application uses the ESP-TOUCH protocol to realise smart configuration of the device. The communication protocols used are JSON and HTTP REST. An Android mobile APK (https://github.com/EspressifApp/IOT-Espressif-Android) is also included as a basic template for the users.
    
 ## Code Structure ##
 
@@ -64,9 +64,11 @@ Target device can be configured through defining user_config.h macro. This appli
 
 First export the two parameters specifying the paths of  esp8266 RTOS SDK and compiler generated firmware.
 
-export SDK_PATH=~/esp_iot_sdk_freertos(esp8266 RTOS SDK path)
+export SDK_PATH=~/esp_iot_sdk_freertos
+(esp8266 RTOS SDK path)
 
-export BIN_PATH=~/esp8266_bin(the folder to save target binary)
+export BIN_PATH=~/esp8266_bin
+(the folder to save target binary)
 
 Run the compilation script ./gen_misc.sh; you will prompted for some configuration parameters. User the firmware download tool to flash the device with the bins generated. For my version of FreeRTOS ESP8266 SDK 1.2.0.3, I have used the following parameters in the upload:
 
