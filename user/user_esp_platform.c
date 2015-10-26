@@ -98,7 +98,7 @@ LOCAL uint32 active_nonce;
 LOCAL struct rst_info rtc_info;
 
 LOCAL uint8 iot_version[20];
-LOCAL uint8 esp_domain_ip[4]= {114,215,177,97};
+LOCAL uint8 esp_domain_ip[4]= {115,29,202,58};
 
 LOCAL ip_addr_t esp_server_ip;
 LOCAL struct sockaddr_in remote_addr;
@@ -1384,6 +1384,38 @@ user_platform_stationap_enable(void)
     }
 #endif
 
+
+#ifdef SPIFFS_ENABLE
+#define FS1_FLASH_SIZE      (128*1024)
+#define FS2_FLASH_SIZE      (128*1024)
+
+#define FS1_FLASH_ADDR      (1024*1024)
+#define FS2_FLASH_ADDR      (1280*1024)
+
+#define SECTOR_SIZE         (4*1024) 
+#define LOG_BLOCK           (SECTOR_SIZE)
+#define LOG_PAGE            (128)
+
+#define FD_BUF_SIZE         32*4
+#define CACHE_BUF_SIZE      (LOG_PAGE + 32)*8
+
+static void upgrade_spiffs_config(void)
+{
+	struct esp_spiffs_config spiffs_config;
+	bzero(&spiffs_config,sizeof(struct esp_spiffs_config));
+	
+	spiffs_config.phys_size = FS1_FLASH_SIZE;
+	spiffs_config.phys_addr = FS1_FLASH_ADDR;
+	spiffs_config.phys_erase_block = SECTOR_SIZE;
+	spiffs_config.log_block_size = LOG_BLOCK;
+	spiffs_config.log_page_size = LOG_PAGE;
+	spiffs_config.fd_buf_size = FD_BUF_SIZE * 2;
+	spiffs_config.cache_buf_size = CACHE_BUF_SIZE;
+	esp_spiffs_init(&spiffs_config);
+}
+#endif
+
+
 void  
 user_esp_platform_maintainer(void *pvParameters)
 {
@@ -1404,9 +1436,6 @@ user_esp_platform_maintainer(void *pvParameters)
     
     client_param.sock_fd=-1;
     
-#ifdef CLIENT_SSL_ENABLE
-    uint32_t options = SSL_SERVER_VERIFY_LATER | SSL_DISPLAY_CERTS | SSL_NO_DEFAULT_KEY;
-#endif  
     //vTaskDelay(10000 / portTICK_RATE_MS);//wait pc serial ready
 
     user_esp_platform_param_recover();
@@ -1535,6 +1564,8 @@ user_esp_platform_maintainer(void *pvParameters)
                 int cert_size, ca_cert_size;
                 char **ca_cert, **cert;
 
+                uint32_t options = SSL_SERVER_VERIFY_LATER | SSL_DISPLAY_CERTS | SSL_NO_DEFAULT_KEY;
+
                 cert_size = ssl_get_config(SSL_MAX_CERT_CFG_OFFSET);
                 ca_cert_size = ssl_get_config(SSL_MAX_CA_CERT_CFG_OFFSET);
                 ca_cert = (char **)calloc(1, sizeof(char *)*ca_cert_size);
@@ -1545,18 +1576,46 @@ user_esp_platform_maintainer(void *pvParameters)
                     close(client_param.sock_fd);
                     continue;
                 }
-
-                for (i = 0; i < cert_index; i++) {
-                    if (ssl_obj_load(client_param.ssl_ctx, SSL_OBJ_X509_CERT, cert[i], NULL)){
-                        printf("Certificate '%s' is undefined.\n", cert[i]);
-                    }
-                }
                 
-                for (i = 0; i < ca_cert_index; i++) {
-                    if (ssl_obj_load(client_param.ssl_ctx, SSL_OBJ_X509_CACERT, ca_cert[i], NULL)){
-                        printf("Certificate '%s' is undefined.\n", ca_cert[i]);
-                    }
-                }
+#ifdef SPIFFS_ENABLE
+
+                upgrade_spiffs_config();
+                //        for (i = 0; i < cert_index; i++) {
+                //        if (ssl_obj_load(ssl_ctx, SSL_OBJ_X509_CERT, "TLS.example.cer", NULL)){
+                //           printf("Certificate '%s' is undefined.\n", "TLS.example.cer");
+                //        }else
+                //          printf("Certificate '%s' is defined.\n", "TLS.example.cer");
+                //        }
+                
+                //      if (ssl_obj_load(ssl_ctx, SSL_OBJ_RSA_KEY, "TLS.example.key", NULL)){
+                //           printf("key '%s' is undefined.\n", "TLS.example.key");
+                //        }else
+                //          printf("key '%s' is defined.\n", "TLS.example.key");
+                
+                //        for (i = 0; i < ca_cert_index; i++) {
+                //        if (ssl_obj_load(ssl_ctx, SSL_OBJ_X509_CACERT, "TLS.ca-chain.cer", NULL)){
+                //           printf("Certificate auth '%s' is undefined.\n", "TLS.ca-chain.cer");
+                //        }else
+                //          printf("Certificate auth '%s' is defined.\n", "TLS.ca-chain.cer");
+                //        }
+#elif 0
+                //      int ret = 0;
+                //      if (ret = ssl_obj_option_load(ssl_ctx, SSL_OBJ_X509_CACERT, "TLS.ca-chain.cer", NULL, 0x7c))
+                //          printf("Certificate auth %s load fail\n",  "TLS.ca-chain.cer");
+                //      else
+                //          printf("Certificate auth load ok\n");
+                
+                //      if (ret = ssl_obj_option_load(ssl_ctx, SSL_OBJ_RSA_KEY, "TLS.example.key", NULL, 0x7c))
+                //          printf("key %s load fail, %d\n",  "TLS.example.key", ret);
+                //      else
+                //          printf("key load ok\n");
+                
+                //      if (ret = ssl_obj_option_load(ssl_ctx, SSL_OBJ_X509_CERT, "TLS.example.cer", NULL, 0x7c))
+                //          printf("Certificate %s load fail, %d\n",  "TLS.example.cer", ret);
+                //      else
+                //          printf("Certificate load ok\n");
+                
+#endif
 
                 free(cert);
                 free(ca_cert);

@@ -38,7 +38,7 @@ EXTRA_INCDIR	= ./include \
 
 # compiler flags using during compilation of source files
 CFLAGS		= -Os -ggdb -std=c99 -Werror -Wpointer-arith -Wundef -Wall -Wl,-EL -fno-inline-functions \
-		-nostdlib -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH -D_STDINT_H \
+		-nostdlib -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH \
 		-Wno-address -ffunction-sections -fdata-sections
 
 # various paths from the SDK used in this project
@@ -68,7 +68,7 @@ SRC_DIR		:= $(MODULES)
 BUILD_DIR	:= $(addprefix $(BUILD_BASE)/,$(MODULES))
 
 SDK_INCDIR	:= $(addprefix -I$(SDK_BASE)/,$(SDK_INCDIR))
-SDK_INCDIR	:= $(addprefix -I$(SDK_BASE)/,$(SDK_ESP_INCDIR))
+SDK_INCDIR	+= $(addprefix -I$(SDK_BASE)/,$(SDK_ESP_INCDIR))
 SDK_INCDIR  += $(addprefix -I$(SDK_BASE)/,$(SDK_OS_INCDIR))
 SDK_INCDIR  += $(addprefix -I$(SDK_BASE)/,$(SDK_JSON_INCDIR))
 SDK_INCDIR  += $(addprefix -I$(SDK_BASE)/,$(SDK_LWIP_INCDIR))
