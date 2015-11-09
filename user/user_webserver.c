@@ -226,6 +226,7 @@ switch_req_parse(const char *pValue)
         if(pJsonSub_status->type == cJSON_Number){
             WS_DEBUG("switch_status_set status %d d %d\n",pJsonSub_status->valueint);
             user_plug_set_status(pJsonSub_status->valueint);
+            if(NULL != pJson)cJSON_Delete(pJson);
             return 0;
         }
     }
