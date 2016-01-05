@@ -83,7 +83,7 @@ HttpdBuiltInUrl builtInUrls[]={
 *******************************************************************************/
 void user_init(void)
 {
-    printf("SDK version:%s\n", system_get_sdk_version());
+    printf("SDK version:%s,%u\n", system_get_sdk_version(),__LINE__ );
     wifi_set_opmode(STATIONAP_MODE);
     
 #if ESP_PLATFORM

@@ -621,12 +621,18 @@ wifi_req_parse(char *pValue)
         
         pJsonSub_Sub = cJSON_GetObjectItem(pJsonSub_Connect_Station,"ssid");
         if(NULL != pJsonSub_Sub){       
-            memcpy(sta_conf->ssid, pJsonSub_Sub->valuestring, strlen(pJsonSub_Sub->valuestring));
+             if(  strlen(pJsonSub_Sub->valuestring) <= 32 )
+                memcpy(sta_conf->ssid, pJsonSub_Sub->valuestring, strlen(pJsonSub_Sub->valuestring));
+            else
+                os_printf("ERR:arr_overflow,%u,%d\n",__LINE__, strlen(pJsonSub_Sub->valuestring) );
         }
         
         pJsonSub_Sub = cJSON_GetObjectItem(pJsonSub_Connect_Station,"password");
         if(NULL != pJsonSub_Sub){
-            memcpy(sta_conf->password, pJsonSub_Sub->valuestring, strlen(pJsonSub_Sub->valuestring));
+             if(  strlen(pJsonSub_Sub->valuestring) <= 64 )
+                memcpy(sta_conf->password, pJsonSub_Sub->valuestring, strlen(pJsonSub_Sub->valuestring));
+            else
+                os_printf("ERR:arr_overflow,%u,%d\n",__LINE__, strlen(pJsonSub_Sub->valuestring) );
         }
         
 #if ESP_PLATFORM
@@ -649,14 +655,23 @@ wifi_req_parse(char *pValue)
         if(NULL != pJsonSub_Sub){
             WS_DEBUG("pJsonSub_Connect_Softap pJsonSub_Sub->ssid %s  len%d\n",
                 pJsonSub_Sub->valuestring, strlen(pJsonSub_Sub->valuestring));
-            memcpy(ap_conf->ssid, pJsonSub_Sub->valuestring, strlen(pJsonSub_Sub->valuestring));
+            
+            if(  strlen(pJsonSub_Sub->valuestring) <= 32 )
+                memcpy(ap_conf->ssid, pJsonSub_Sub->valuestring, strlen(pJsonSub_Sub->valuestring));
+            else
+                os_printf("ERR:arr_overflow,%u,%d\n",__LINE__, strlen(pJsonSub_Sub->valuestring) );
         }
         
         pJsonSub_Sub = cJSON_GetObjectItem(pJsonSub_Connect_Softap,"password");
         if(NULL != pJsonSub_Sub){
             WS_DEBUG("pJsonSub_Connect_Softap pJsonSub_Sub->password %s  len%d\n",
                 pJsonSub_Sub->valuestring, strlen(pJsonSub_Sub->valuestring));
-            memcpy(ap_conf->password, pJsonSub_Sub->valuestring, strlen(pJsonSub_Sub->valuestring));
+            
+            if(  strlen(pJsonSub_Sub->valuestring) <= 64 )
+                memcpy(ap_conf->password, pJsonSub_Sub->valuestring, strlen(pJsonSub_Sub->valuestring));
+            else
+                os_printf("ERR:arr_overflow,%u,%d\n",__LINE__, strlen(pJsonSub_Sub->valuestring) );
+            
         }
         
         pJsonSub_Sub = cJSON_GetObjectItem(pJsonSub_Connect_Softap,"channel");
@@ -825,25 +840,45 @@ parse_url(char *precv, URL_Frame *purl_frame)
 
         if (str != NULL) {
             length = str - pbuffer;
-            memcpy(purl_frame->pSelect, pbuffer, length);
+            
+            if(  length <= 12 )
+                memcpy(purl_frame->pSelect, pbuffer, length);
+            else
+                os_printf("ERR:arr_overflow,%u,%d\n",__LINE__, length );
+            
             str ++;
             pbuffer = (char *)strstr(str, "=");
 
             if (pbuffer != NULL) {
                 length = pbuffer - str;
+                
+            if(  length <= 12 )
                 memcpy(purl_frame->pCommand, str, length);
+            else
+                os_printf("ERR:arr_overflow,%u,%d\n",__LINE__, length );
+                
                 pbuffer ++;
                 str = (char *)strstr(pbuffer, "&");
 
                 if (str != NULL) {
                     length = str - pbuffer;
-                    memcpy(purl_frame->pFilename, pbuffer, length);
+                    
+                    if(  length <= 12 )
+                        memcpy(purl_frame->pFilename, pbuffer, length);
+                    else
+                        os_printf("ERR:arr_overflow,%u,%d\n",__LINE__, length );
+                    
                 } else {
                     str = (char *)strstr(pbuffer, " HTTP");
 
                     if (str != NULL) {
                         length = str - pbuffer;
-                        memcpy(purl_frame->pFilename, pbuffer, length);
+
+                        if(  length <= 12 )
+                            memcpy(purl_frame->pFilename, pbuffer, length);
+                        else
+                            os_printf("ERR:arr_overflow,%u,%d\n",__LINE__, length );
+                        
                     }
                 }
             }
@@ -889,7 +924,12 @@ save_data(char *precv, uint16 length)
             precvbuffer = (char *)strstr(pdata, "\r\n");
 
             if (precvbuffer != NULL) {
-                memcpy(length_buf, pdata, precvbuffer - pdata);
+                
+                if(  (precvbuffer - pdata) <= 10 )
+                    memcpy(length_buf, pdata, precvbuffer - pdata);
+                else
+                    os_printf("ERR:arr_overflow,%u,%d\n",__LINE__, (precvbuffer - pdata) );
+                
                 dat_sumlength = atoi(length_buf);
             }
         } else {
@@ -961,7 +1001,12 @@ check_data(char *precv, uint16 length)
             
             if (tmp_precvbuffer != NULL){
                 WS_DEBUG(" tmp_precvbuffer 0x%x pdata 0x%x ",tmp_precvbuffer,pdata);
-                memcpy(length_buf, pdata, tmp_precvbuffer - pdata);
+                
+                if(  (tmp_precvbuffer - pdata) <= 10 )
+                    memcpy(length_buf, pdata, tmp_precvbuffer - pdata);
+                else
+                    os_printf("ERR:arr_overflow,%u,%d\n",__LINE__, (tmp_precvbuffer - pdata) );
+                
                 dat_sumlength = atoi(length_buf);
                 WS_DEBUG("A_dat:%u,tot:%u,lenght:%u\n",dat_sumlength,tmp_totallength,tmp_length);
                 
@@ -1336,7 +1381,12 @@ local_upgrade_download(struct single_conn_param *psingle_conn_param,char *pusrda
 
             if (ptmp2 != NULL) {
                 memset(lengthbuffer, 0, sizeof(lengthbuffer));
-                memcpy(lengthbuffer, ptr, ptmp2 - ptr);
+                
+                if(  (ptmp2 - ptr) <= 32 )
+                    memcpy(lengthbuffer, ptr, ptmp2 - ptr);
+                else
+                    os_printf("ERR:arr_overflow,%u,%d\n",__LINE__, (ptmp2 - ptr) );
+                
                 sumlength = atoi(lengthbuffer);
                 printf("Userbin sumlength %dB\n", sumlength);
             } else {

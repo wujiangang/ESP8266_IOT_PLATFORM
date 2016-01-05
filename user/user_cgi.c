@@ -696,12 +696,18 @@ wifi_info_set(const char* pValue)
 
         pJsonSub_Sub = cJSON_GetObjectItem(pJsonSub_Connect_Station,"ssid");
         if(NULL != pJsonSub_Sub){       
-            memcpy(sta_conf->ssid, pJsonSub_Sub->valuestring, strlen(pJsonSub_Sub->valuestring));
+            if( strlen(pJsonSub_Sub->valuestring)<=32 )
+                memcpy(sta_conf->ssid, pJsonSub_Sub->valuestring, strlen(pJsonSub_Sub->valuestring));
+            else
+                 os_printf("ERR:arr_overflow,%u,%d\n",__LINE__,strlen(pJsonSub_Sub->valuestring));
         }
 
         pJsonSub_Sub = cJSON_GetObjectItem(pJsonSub_Connect_Station,"password");
         if(NULL != pJsonSub_Sub){
-            memcpy(sta_conf->password, pJsonSub_Sub->valuestring, strlen(pJsonSub_Sub->valuestring));
+            if( strlen(pJsonSub_Sub->valuestring)<=64 )
+                memcpy(sta_conf->password, pJsonSub_Sub->valuestring, strlen(pJsonSub_Sub->valuestring));
+            else
+                 os_printf("ERR:arr_overflow,%u,%d\n",__LINE__,strlen(pJsonSub_Sub->valuestring));
         }
 
 #if ESP_PLATFORM
@@ -725,7 +731,10 @@ wifi_info_set(const char* pValue)
                 printf("pJsonSub_Connect_Softap pJsonSub_Sub->ssid %s  len%d\n",
                 pJsonSub_Sub->valuestring, strlen(pJsonSub_Sub->valuestring));
             */
-            memcpy(ap_conf->ssid, pJsonSub_Sub->valuestring, strlen(pJsonSub_Sub->valuestring));
+            if( strlen(pJsonSub_Sub->valuestring)<=32 )
+                memcpy(ap_conf->ssid, pJsonSub_Sub->valuestring, strlen(pJsonSub_Sub->valuestring));
+            else
+                 os_printf("ERR:arr_overflow,%u,%d\n",__LINE__,strlen(pJsonSub_Sub->valuestring));
         }
 
         pJsonSub_Sub = cJSON_GetObjectItem(pJsonSub_Connect_Softap,"password");
@@ -734,7 +743,10 @@ wifi_info_set(const char* pValue)
             printf("pJsonSub_Connect_Softap pJsonSub_Sub->password %s  len%d\n",
                 pJsonSub_Sub->valuestring, strlen(pJsonSub_Sub->valuestring));
           */          
-            memcpy(ap_conf->password, pJsonSub_Sub->valuestring, strlen(pJsonSub_Sub->valuestring));
+            if( strlen(pJsonSub_Sub->valuestring)<=64 )
+                memcpy(ap_conf->password, pJsonSub_Sub->valuestring, strlen(pJsonSub_Sub->valuestring));
+            else
+                 os_printf("ERR:arr_overflow,%u,%d\n",__LINE__,strlen(pJsonSub_Sub->valuestring));
         }
 
         pJsonSub_Sub = cJSON_GetObjectItem(pJsonSub_Connect_Softap,"channel");

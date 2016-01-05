@@ -139,8 +139,17 @@ user_platform_timer_first_start(uint16 count)
             TM_DEBUG("timer is fixed mode\n");
 
             split(str, "=", fixed_wait);
-            memcpy(&pt_w_p->wait_time_param, fixed_wait[0] + 1, strlen(fixed_wait[0]) - 1);
-            memcpy(&pt_w_p->wait_action, fixed_wait[1], strlen(fixed_wait[1]));
+            
+             if( (strlen(fixed_wait[0]) - 1) <= 12 )
+                memcpy(&pt_w_p->wait_time_param, fixed_wait[0] + 1, strlen(fixed_wait[0]) - 1);
+            else
+                os_printf("ERR:arr_overflow,%u,%d\n",__LINE__, (strlen(fixed_wait[0]) - 1) );
+        
+             if( strlen(fixed_wait[1]) <= 16 )
+                memcpy(&pt_w_p->wait_action, fixed_wait[1], strlen(fixed_wait[1]) );
+            else
+                os_printf("ERR:arr_overflow,%u,%d\n",__LINE__, strlen(fixed_wait[1]) );
+            
             pt_w_p->wait_time_second = atoi(pt_w_p->wait_time_param) - timer_param.timestamp;
             free(fixed_wait[0]);
             free(fixed_wait[1]);
@@ -152,8 +161,17 @@ user_platform_timer_first_start(uint16 count)
             TM_DEBUG("timer is loop mode\n");/*every sec or min or hour or day tiger the action*/
 
             split(str, "=", loop_wait);
-            memcpy(&pt_w_p->wait_time_param, loop_wait[0] + 1, strlen(loop_wait[0]) - 1);
-            memcpy(&pt_w_p->wait_action, loop_wait[1], strlen(loop_wait[1]));
+
+             if( (strlen(loop_wait[0]) - 1) <= 12 )
+                memcpy(&pt_w_p->wait_time_param, loop_wait[0] + 1, strlen(loop_wait[0]) - 1);
+            else
+                os_printf("ERR:arr_overflow,%u,%d\n",__LINE__, (strlen(loop_wait[0]) - 1) );
+        
+             if( strlen(loop_wait[1]) <= 16 )
+                memcpy(&pt_w_p->wait_action, loop_wait[1], strlen(loop_wait[1]));
+            else
+                os_printf("ERR:arr_overflow,%u,%d\n",__LINE__, strlen(loop_wait[1]) );
+
             pt_w_p->wait_time_second = atoi(pt_w_p->wait_time_param) - (timer_param.timestamp % atoi(pt_w_p->wait_time_param));
             free(loop_wait[0]);
             free(loop_wait[1]);
@@ -166,8 +184,17 @@ user_platform_timer_first_start(uint16 count)
             TM_DEBUG("timer is weekend mode\n");
 
             split(str, "=", week_wait);
-            memcpy(&pt_w_p->wait_time_param, week_wait[0] + 1, strlen(week_wait[0]) - 1);
-            memcpy(&pt_w_p->wait_action, week_wait[1], strlen(week_wait[1]));
+
+             if( (strlen(week_wait[0]) - 1) <= 12 )
+                memcpy(&pt_w_p->wait_time_param, week_wait[0] + 1, strlen(week_wait[0]) - 1);
+            else
+                os_printf("ERR:arr_overflow,%u,%d\n",__LINE__, (strlen(week_wait[0]) - 1) );
+        
+             if( strlen(week_wait[1]) <= 16 )
+                memcpy(&pt_w_p->wait_action, week_wait[1], strlen(week_wait[1]));
+            else
+                os_printf("ERR:arr_overflow,%u,%d\n",__LINE__, strlen(week_wait[1]) );
+
             monday_wait_time = (timer_param.timestamp - 1388937600) % (7 * 24 * 3600);
             
             TM_DEBUG("monday_wait_time=%d \n", monday_wait_time);
@@ -392,7 +419,12 @@ user_platform_timer_start(char *pbuffer)
         pstr_end = (char *)strstr(pstr_start, ",");
 
         if (pstr != NULL) {
-            memcpy(timestamp_str, pstr_start, pstr_end - pstr_start);
+            
+             if(  (pstr_end - pstr_start) <= 11 )
+                memcpy(timestamp_str, pstr_start, pstr_end - pstr_start);
+            else
+                os_printf("ERR:arr_overflow,%u,%d\n",__LINE__, (pstr_end - pstr_start) );
+            
             timer_param.timestamp = atoi(timestamp_str);
         }
     }

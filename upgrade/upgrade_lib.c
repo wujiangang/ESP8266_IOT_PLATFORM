@@ -65,7 +65,10 @@ system_upgrade_internal(struct upgrade_param *upgrade, uint8 *data, u32 len)
     upgrade->extra = len & 0x03;
     len -= upgrade->extra;
 
-    memcpy(upgrade->save, upgrade->buffer + len, upgrade->extra);
+    if(upgrade->extra<=4)
+        memcpy(upgrade->save, upgrade->buffer + len, upgrade->extra);
+    else
+        os_printf("ERR3:arr_overflow,%u,%d\n",__LINE__,upgrade->extra);
 
     do {
         if (upgrade->fw_bin_addr + len >= (upgrade->fw_bin_sec + upgrade->fw_bin_sec_num) * SPI_FLASH_SEC_SIZE) {
