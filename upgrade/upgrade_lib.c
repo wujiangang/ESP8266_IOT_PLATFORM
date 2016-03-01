@@ -14,9 +14,9 @@
 
 struct upgrade_param {
     uint32 fw_bin_addr;
-    uint8 fw_bin_sec;
-    uint8 fw_bin_sec_num;
-    uint8 fw_bin_sec_earse;
+    uint16 fw_bin_sec;
+    uint16 fw_bin_sec_num;
+    uint16 fw_bin_sec_earse;
     uint8 extra;
     uint8 save[4];
     uint8 *buffer;
@@ -25,6 +25,38 @@ struct upgrade_param {
 LOCAL struct upgrade_param *upgrade;
 
 //extern SpiFlashChip *flashchip;
+
+LOCAL bool OUT_OF_RANGE(uint16 erase_sec)
+{
+	uint8 spi_size_map = system_get_flash_size_map();
+	uint16 sec_num = 0;
+	uint16 start_sec = 0;
+	
+
+	if (spi_size_map == FLASH_SIZE_8M_MAP_512_512 || 
+			spi_size_map ==FLASH_SIZE_16M_MAP_512_512 ||
+			spi_size_map ==FLASH_SIZE_32M_MAP_512_512){
+			start_sec = (system_upgrade_userbin_check() == USER_BIN2)? 1:129;
+			sec_num = 123;
+	} else if(spi_size_map == FLASH_SIZE_16M_MAP_1024_1024 || 
+			spi_size_map == FLASH_SIZE_32M_MAP_1024_1024){
+			start_sec = (system_upgrade_userbin_check() == USER_BIN2)? 1:257;
+			sec_num = 251;
+	} else {
+			start_sec = (system_upgrade_userbin_check() == USER_BIN2)? 1:65;
+			sec_num = 59;
+	}
+	if((erase_sec >= start_sec) &&(erase_sec <= (start_sec + sec_num)))
+	{
+		return false;
+	} else {
+		return true;
+	}
+	
+}
+
+
+
 
 /******************************************************************************
  * FunctionName : user_upgrade_internal
@@ -36,7 +68,7 @@ LOCAL bool
 system_upgrade_internal(struct upgrade_param *upgrade, uint8 *data, u32 len)
 {
     bool ret = false;
-    u8 secnm=0;
+    uint16 secnm=0;
     if(data == NULL || len == 0)
     {
         return true;
@@ -48,8 +80,19 @@ system_upgrade_internal(struct upgrade_param *upgrade, uint8 *data, u32 len)
 
         secnm=((upgrade->fw_bin_addr + len)>>12) + (len&0xfff?1:0);
         while(upgrade->fw_bin_sec_earse != secnm) {
-            spi_flash_erase_sector(upgrade->fw_bin_sec_earse);
-            upgrade->fw_bin_sec_earse++;
+            taskENTER_CRITICAL();
+			if( OUT_OF_RANGE( upgrade->fw_bin_sec_earse) )
+			{
+				os_printf("fw_bin_sec_earse:%d, Out of range\n",upgrade->fw_bin_sec_earse);
+				break;
+			
+			}
+			else
+			{
+				 spi_flash_erase_sector(upgrade->fw_bin_sec_earse);
+				 upgrade->fw_bin_sec_earse++;
+			}
+			taskEXIT_CRITICAL();
             vTaskDelay(10 / portTICK_RATE_MS);
         }
         os_printf("flash erase over\n");
@@ -89,6 +132,21 @@ system_upgrade_internal(struct upgrade_param *upgrade, uint8 *data, u32 len)
 }
 
 /******************************************************************************
+ * FunctionName : system_get_fw_start_sec
+ * Description  : a
+ * Parameters   :
+ * Returns      :
+*******************************************************************************/
+uint16 system_get_fw_start_sec()
+{
+	if(upgrade != NULL) {
+		return upgrade->fw_bin_sec;
+	} else {
+		return 0;
+	}
+}
+
+/******************************************************************************
  * FunctionName : user_upgrade
  * Description  : a
  * Parameters   :
@@ -121,30 +179,30 @@ bool system_upgrade(uint8 *data, uint32 len)
 void  
 system_upgrade_init(void)
 {
-    uint32 user_bin2_start;
-    uint8 flash_buf[4];
-    uint8 high_half;
-
-    spi_flash_read(0, (uint32 *)flash_buf, 4);
-    high_half = (flash_buf[3] & 0xF0) >> 4;
-    
-    os_printf("high_half %d\n",high_half);
-
-    if (upgrade == NULL) {
+    uint32 user_bin2_start,user_bin1_start;
+	uint8 spi_size_map = system_get_flash_size_map();
+	
+	if (upgrade == NULL) {
         upgrade = (struct upgrade_param *)zalloc(sizeof(struct upgrade_param));
     }
+	
+	user_bin1_start = 1; 
 
-    system_upgrade_flag_set(UPGRADE_FLAG_IDLE);
-
-    if (high_half == 2 || high_half == 3 || high_half == 4) {
-        user_bin2_start = 129;  // 128 + 1
-        upgrade->fw_bin_sec_num = 123;  // 128 - 1 - 4
-    } else {
-        user_bin2_start = 65;   // 64 + 1
-        upgrade->fw_bin_sec_num = 59;   // 64 - 1 - 4
-    }
-
-    upgrade->fw_bin_sec = (system_upgrade_userbin_check() == USER_BIN1) ? user_bin2_start : 1;
+	if (spi_size_map == FLASH_SIZE_8M_MAP_512_512 || 
+			spi_size_map ==FLASH_SIZE_16M_MAP_512_512 ||
+			spi_size_map ==FLASH_SIZE_32M_MAP_512_512){
+			user_bin2_start = 129;
+			upgrade->fw_bin_sec_num = 123;
+	} else if(spi_size_map == FLASH_SIZE_16M_MAP_1024_1024 || 
+			spi_size_map == FLASH_SIZE_32M_MAP_1024_1024){
+			user_bin2_start = 257;
+			upgrade->fw_bin_sec_num = 251;
+	} else {
+			user_bin2_start = 65;
+			upgrade->fw_bin_sec_num = 59;
+	}
+   
+    upgrade->fw_bin_sec = (system_upgrade_userbin_check() == USER_BIN1) ? user_bin2_start : user_bin1_start;
 
     upgrade->fw_bin_addr = upgrade->fw_bin_sec * SPI_FLASH_SEC_SIZE;
     

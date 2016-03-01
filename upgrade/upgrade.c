@@ -475,6 +475,13 @@ void upgrade_ssl_task(void *pvParameters)
     
 finish:
 
+	if(upgrade_crc_check(system_get_fw_start_sec(),sumlength) != 0)
+	{
+		printf("upgrade crc check failed !\n");
+		server->upgrade_flag = false;
+        system_upgrade_flag_set(UPGRADE_FLAG_IDLE);	
+	}
+
     os_timer_disarm(&upgrade_timer);
 
     totallength = 0;
@@ -607,6 +614,13 @@ void upgrade_task(void *pvParameters)
 finish:
 
     os_timer_disarm(&upgrade_timer);
+
+	if(upgrade_crc_check(system_get_fw_start_sec(),sumlength) != 0)
+	{
+		printf("upgrade crc check failed !\n");
+		server->upgrade_flag = false;
+        system_upgrade_flag_set(UPGRADE_FLAG_IDLE);	
+	}
 
     if(NULL != precv_buf) {
         free(precv_buf);
