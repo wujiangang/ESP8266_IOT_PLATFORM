@@ -620,6 +620,15 @@ finish:
 		printf("upgrade crc check failed !\n");
 		server->upgrade_flag = false;
         system_upgrade_flag_set(UPGRADE_FLAG_IDLE);	
+	} else {		
+		if(retry_count == UPGRADE_RETRY_TIMES){
+			/*retry too many times, fail*/
+			server->upgrade_flag = false;
+			system_upgrade_flag_set(UPGRADE_FLAG_IDLE);
+		}else{
+			server->upgrade_flag = true;
+			system_upgrade_flag_set(UPGRADE_FLAG_FINISH);
+		}
 	}
 
     if(NULL != precv_buf) {
@@ -629,17 +638,7 @@ finish:
     totallength = 0;
     sumlength = 0;
     flash_erased=FALSE;
-
-    if(retry_count == UPGRADE_RETRY_TIMES){
-        /*retry too many times, fail*/
-        server->upgrade_flag = false;
-        system_upgrade_flag_set(UPGRADE_FLAG_IDLE);
-
-    }else{
-        server->upgrade_flag = true;
-        system_upgrade_flag_set(UPGRADE_FLAG_FINISH);
-    }
-    
+      
     upgrade_deinit();
     
     os_printf("\n Exit upgrade task.\n");
