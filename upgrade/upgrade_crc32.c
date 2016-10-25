@@ -115,7 +115,6 @@ upgrade_crc_check(uint16 fw_bin_sec ,unsigned int sumlength)
 	if (ret < 0) {
 		return false;
 	}
-	img_crc = abs(img_crc);
 	os_printf("img_crc = %u\n",img_crc);
 	spi_flash_read(start_sec * SPI_FLASH_SEC_SIZE + sumlength - 4,&flash_crc, 4);
     os_printf("flash_crc = %u\n",flash_crc);
