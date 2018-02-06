@@ -70,6 +70,7 @@ a memory exception, crashing the program.
 EspFsInitResult   espFsInit(void *flashAddress) {
 	// base address must be aligned to 4 bytes
 	if (((int)flashAddress & 3) != 0) {
+	    printf("error: not 4 bytes aligned addr:%p", flashAddress);
 		return ESPFS_INIT_RESULT_BAD_ALIGN;
 	}
 
