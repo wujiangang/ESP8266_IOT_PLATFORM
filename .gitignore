@@ -1,0 +1,12 @@
+# TO Delete if release
+bin/upgrade
+
+# Compile intermediate file
+.output
+*.d
+*.o
+
+# Config file
+.settings
+.project
+.cproject

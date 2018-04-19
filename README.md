@@ -62,14 +62,6 @@ Target device can be configured through defining user_config.h macro. This appli
 
 ## Compiling the Code ##
 
-First export the two parameters specifying the paths of  esp8266 RTOS SDK and compiler generated firmware.
-
-export SDK_PATH=~/esp_iot_sdk_freertos
-(esp8266 RTOS SDK path)
-
-export BIN_PATH=~/esp8266_bin
-(the folder to save target binary)
-
 Run the compilation script ./gen_misc.sh; you will prompted for some configuration parameters. User the firmware download tool to flash the device with the bins generated. For my version of FreeRTOS ESP8266 SDK 1.2.0.3, I have used the following parameters in the upload:
 
 boot_v1.4(b1).bin, downloads to flash 0x00000
