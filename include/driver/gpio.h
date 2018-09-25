@@ -6,6 +6,11 @@
 #ifndef __GPIO_H__
 #define __GPIO_H__
 
+#include "esp8266/gpio_register.h"
+
+#define ETS_GPIO_INTR_ENABLE()  _xt_isr_unmask(1 << ETS_GPIO_INUM)
+#define ETS_GPIO_INTR_DISABLE() _xt_isr_mask(1 << ETS_GPIO_INUM)
+
 #define GPIO_Pin_0              (BIT(0))  /* Pin 0 selected */
 #define GPIO_Pin_1              (BIT(1))  /* Pin 1 selected */
 #define GPIO_Pin_2              (BIT(2))  /* Pin 2 selected */

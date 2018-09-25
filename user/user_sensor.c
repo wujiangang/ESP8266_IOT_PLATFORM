@@ -8,6 +8,7 @@
  * Modification history:
  * 2017/7/1, v1.0 create this file.
 *******************************************************************************/
+#include "esp_common.h"
 #include "user_config.h"
 
 #if SENSOR_DEVICE
@@ -185,12 +186,12 @@ user_link_led_output(uint8 mode)
     switch (mode) {
         case LED_OFF:
             os_timer_disarm(&link_led_timer);
-            GPIO_OUTPUT_SET(GPIO_ID_PIN(PLUG_LINK_LED_IO_NUM), 1);
+            GPIO_OUTPUT_SET(GPIO_ID_PIN(SENSOR_LINK_LED_IO_NUM), 1);
             break;
     
         case LED_ON:
             os_timer_disarm(&link_led_timer);
-            GPIO_OUTPUT_SET(GPIO_ID_PIN(PLUG_LINK_LED_IO_NUM), 0);
+            GPIO_OUTPUT_SET(GPIO_ID_PIN(SENSOR_LINK_LED_IO_NUM), 0);
             break;
     
         case LED_1HZ:

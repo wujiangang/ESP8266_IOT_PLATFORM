@@ -80,6 +80,7 @@ LOCAL uint8 ping_status=TRUE;
 \"body\": {\"datapoint\": {\"x\": %d.%03d}}, \"meta\": {\"Authorization\": \"token %s\"}}\n"
 #endif
 LOCAL uint32 count = 0;
+LOCAL uint8 ping_status=TRUE;
 #endif
 
 #define ACTIVE_FRAME    "{\"nonce\": %d,\"path\": \"/v1/device/activate/\", \"method\": \"POST\", \"body\": {\"encrypt_method\": \"PLAIN\", \"token\": \"%s\", \"bssid\": \""MACSTR"\",\"rom_version\":\"%s\"}, \"meta\": {\"Authorization\": \"token %s\"}}\n"
